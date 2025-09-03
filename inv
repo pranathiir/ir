@@ -1,0 +1,75 @@
+import collections
+
+def build_index(docs):
+    index = collections.defaultdict(list)
+    for i, doc in enumerate(docs):
+        for term in set(doc.lower().split()):
+            index[term].append(i)
+    return dict(index)
+
+def get(term, index):
+    return index.get(term.lower(), [])
+
+def AND(list1, list2):
+    return [x for x in list1 if x in list2]
+
+def OR(list1, list2):
+    return sorted(set(list1 + list2))
+
+def NOT(posting_list, docs):
+    all_docs = list(range(len(docs)))
+    return [x for x in all_docs if x not in posting_list]
+
+def optimize_terms(terms, index, operation='and'):
+    term_lengths = [(term, len(get(term, index))) for term in terms]
+    if operation == 'and':
+        return [term for term, _ in sorted(term_lengths, key=lambda x: x[1])]
+    else:  # OR
+        return [term for term, _ in sorted(term_lengths, key=lambda x: x[1], reverse=True)]
+
+def search(query, docs, index):
+    q = query.lower()
+    if ' and ' in q:
+        terms = [t.strip() for t in q.split(' and ')]
+        terms = optimize_terms(terms, index, 'and')
+        result = get(terms[0], index)
+        for term in terms[1:]:
+            result = AND(result, get(term, index))
+            if not result:
+                break
+        return result
+    
+    elif ' or ' in q:
+        terms = [t.strip() for t in q.split(' or ')]
+        terms = optimize_terms(terms, index, 'or')
+        result = get(terms[0], index)
+        for term in terms[1:]:
+            result = OR(result, get(term, index))
+        return result
+    
+    elif ' not ' in q:
+        pos, neg = q.split(' not ')
+        pos_list = get(pos.strip(), index)
+        neg_list = get(neg.strip(), index)
+        return AND(pos_list, NOT(neg_list, docs))
+    
+    else:
+        return get(q, index)
+
+docs = ["cat dog bird", "dog bird", "cat mouse", "bird eagle", "mouse cat"]
+index = build_index(docs)
+print("Index:", index)
+
+print("\nQuery: 'cat and bird and dog'")
+terms = ['cat', 'bird', 'dog']
+print("Posting list sizes:")
+for term in terms:
+    print(f"  {term}: {len(get(term, index))} docs")
+
+optimized = optimize_terms(terms, index, 'and')
+print(f"Optimized order: {optimized}")
+print(f"Result: {search('cat and bird and dog', docs, index)}")
+
+print("\nOR optimization:")
+or_optimized = optimize_terms(terms, index, 'or')
+print(f"OR order: {or_optimized}")
