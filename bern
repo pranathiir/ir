@@ -1,0 +1,50 @@
+#Multivariate Bernoulli
+
+import numpy as np
+import math
+
+vocab = sorted(list(set(word for doc, _ in training_data for word in doc.split())))
+V = len(vocab)
+print(f"Vocabulary: {vocab}\n")
+
+def to_bernoulli(text):
+    words = text.split()
+    return [1 if w in words else 0 for w in vocab]
+
+pos_docs = [to_bernoulli(t) for t, l in training_data if l == 1]
+neg_docs = [to_bernoulli(t) for t, l in training_data if l == 0]
+N_pos, N_neg = len(pos_docs), len(neg_docs)
+N_total = N_pos + N_neg
+
+prior_pos = N_pos / N_total
+prior_neg = N_neg / N_total
+
+alpha = 1.0
+p_word_pos = [0.0] * V
+p_word_neg = [0.0] * V
+
+for i in range(V):
+    count_pos = sum(doc[i] for doc in pos_docs)
+    count_neg = sum(doc[i] for doc in neg_docs)
+    p_word_pos[i] = (count_pos + alpha) / (N_pos + 2 * alpha)
+    p_word_neg[i] = (count_neg + alpha) / (N_neg + 2 * alpha)
+
+def bernoulli_nb_classify(text):
+    vec = to_bernoulli(text)
+    log_pos = math.log(prior_pos)
+    log_neg = math.log(prior_neg)
+
+    for i in range(V):
+        if vec[i] == 1:
+            log_pos += math.log(p_word_pos[i])
+            log_neg += math.log(p_word_neg[i])
+        else:
+            log_pos += math.log(1 - p_word_pos[i])
+            log_neg += math.log(1 - p_word_neg[i])
+
+    return 1 if log_pos > log_neg else 0
+
+print("=== BERNOULLI NAÏVE BAYES ===")
+for r in test_reviews:
+    pred = bernoulli_nb_classify(r)
+    print(f'"{r}" → {"POSITIVE" if pred == 1 else "NEGATIVE"}')
