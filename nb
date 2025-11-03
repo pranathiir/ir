@@ -1,0 +1,38 @@
+#classification - nb
+
+train_docs = [
+    ("apple launches new iphone", "mobile"),
+    ("samsung galaxy smartphone", "mobile"),
+    ("microsoft ai office tools", "software"),
+    ("google ai search engine", "software")
+]
+
+vocab = sorted(list(set(word for doc, _ in train_docs for word in doc.split())))
+classes = sorted(list(set(label for _, label in train_docs)))
+
+word_counts = {c: {w: 1 for w in vocab} for c in classes}  # Laplace smoothing
+class_counts = {c: 0 for c in classes}
+
+for doc, label in train_docs:
+    tokens = doc.split()
+    class_counts[label] += 1
+    for word in tokens:
+        if word in vocab:
+            word_counts[label][word] += 1
+
+priors = {c: class_counts[c] / len(train_docs) for c in classes}
+total_words = {c: sum(word_counts[c].values()) for c in classes}
+
+def predict_nb(text):
+    tokens = text.split()
+    scores = {}
+    for c in classes:
+        log_prob = math.log(priors[c])
+        for word in tokens:
+            if word in vocab:
+                log_prob += math.log(word_counts[c][word] / total_words[c])
+        scores[c] = log_prob
+    return max(scores, key=scores.get)
+
+test_doc = "new ai search tool"
+print("Predicted class:", predict_nb(test_doc))
