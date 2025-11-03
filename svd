@@ -1,0 +1,50 @@
+#svd
+
+import numpy as np
+import re
+
+docs = [
+    "Data science and machine learning are popular fields",
+    "Machine learning uses data",
+    "Deep learning is a branch of machine learning",
+    "Cooking recipes and food data"
+]
+
+def preprocess(text):
+    text = text.lower()
+    text = re.sub(r'[^a-z\s]', '', text)  # keep only letters
+    return text.split()
+
+vocab = set()
+processed_docs = []
+
+for doc in docs:
+    tokens = preprocess(doc)
+    processed_docs.append(tokens)
+    vocab.update(tokens)
+
+vocab = sorted(list(vocab))  # vocabulary list
+vocab_index = {word: i for i, word in enumerate(vocab)}
+term_doc_matrix = np.zeros((len(vocab), len(docs)))
+
+for j, tokens in enumerate(processed_docs):
+    for word in tokens:
+        term_doc_matrix[vocab_index[word], j] += 1
+
+print("Term-Document Matrix:")
+print(term_doc_matrix)
+
+U, S, Vt = np.linalg.svd(term_doc_matrix, full_matrices=False)
+
+print("\nU (terms x concepts):")
+print("\nSingular Values (Σ):")
+print("\nVᵀ (documents x concepts):")
+
+k = 2  # reduce to 2 topics
+Uk = U[:, :k]
+Sk = np.diag(S[:k])
+Vk = Vt[:k, :]
+
+print("\nReduced document vectors (2-dim latent space):")
+doc_vectors = Sk @ Vk
+print(doc_vectors.T)
