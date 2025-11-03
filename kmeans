@@ -1,0 +1,59 @@
+import numpy as np
+import math
+
+docs = [
+    "apple launches new iphone with advanced camera",
+    "samsung unveils latest galaxy smartphone",
+    "microsoft introduces new ai features in office",
+    "google announces ai powered search tools",
+    "apple and samsung continue smartphone rivalry"
+]
+
+tokenized_docs = [doc.split() for doc in docs]
+vocab = sorted(list(set([word for doc in tokenized_docs for word in doc])))
+
+def compute_tf(doc_tokens):
+    tf = {}
+    for word in vocab:
+        tf[word] = doc_tokens.count(word) / len(doc_tokens)
+    return tf
+
+tf_list = [compute_tf(doc) for doc in tokenized_docs]
+
+def compute_idf():
+    N = len(tokenized_docs)
+    idf = {}
+    for word in vocab:
+        df = sum([1 for doc in tokenized_docs if word in doc])
+        idf[word] = math.log((N) / (1 + df)) + 1  # smooth
+    return idf
+
+idf = compute_idf()
+
+tfidf = []
+for tf in tf_list:
+    tfidf_vec = [tf[word] * idf[word] for word in vocab]
+    tfidf.append(tfidf_vec)
+
+tfidf = np.array(tfidf)
+print("TF-IDF Matrix shape:", tfidf.shape)
+
+def kmeans(X, k=2, max_iter=100):
+    np.random.seed(42)
+    indices = np.random.choice(len(X), k, replace=False)
+    centroids = X[indices]
+
+    for _ in range(max_iter):
+        distances = np.linalg.norm(X[:, None] - centroids, axis=2)
+        labels = np.argmin(distances, axis=1)
+        new_centroids = np.array([X[labels == i].mean(axis=0) for i in range(k)])
+
+        if np.allclose(centroids, new_centroids):
+            break
+        centroids = new_centroids
+
+    return labels, centroids
+
+labels, centroids = kmeans(tfidf, k=2)
+for i, (doc, label) in enumerate(zip(docs, labels)):
+    print(f"Cluster {label}: {doc}")
