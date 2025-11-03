@@ -1,0 +1,44 @@
+#userbased and itembased - collab
+
+import numpy as np
+import math
+
+ratings = np.array([
+    [5, 3, 0, 1],   # User 1
+    [4, 0, 0, 1],   # User 2
+    [1, 1, 0, 5],   # User 3
+    [0, 0, 5, 4],   # User 4
+    [0, 1, 5, 4],   # User 5
+])
+
+def cosine(a, b):
+    num = np.dot(a, b)
+    den = np.linalg.norm(a)*np.linalg.norm(b)
+    return num/den if den!=0 else 0
+
+def userbased(user_index, item_index):
+    target_user = ratings[user_index]
+    sims, weighted_sum, sim_sum = [], 0, 0
+    
+    for other_user in range(len(ratings)):
+        if other_user!=user_index and ratings[other_user][item_index]>0:
+            sim = cosine(target_user, ratings[other_user])
+            sims.append(sim)
+            weighted_sum += sim*ratings[other_user][item_index]
+            sim_sum += abs(sim)
+    
+    return weighted_sum/sim_sum if sim_sum!=0 else 0
+
+def itembased(user_index, item_index):
+    ratingst = ratings.T
+    target_item = ratingst[item_index]
+    sims, weighted_sum, sim_sum = [], 0, 0
+    
+    for other_items in range(len(ratingst)):
+        if other_items!=item_index and ratings[user_index][other_items]>0:
+            sim = cosine(target_item, ratingst[other_items])
+            sims.append(sim)
+            weighted_sum += sim*ratingst[user_index][other_items]
+            sim_sum += abs(sim)
+    
+    return weighted_sum/sim_sum if sim_sum!=0 else  0
