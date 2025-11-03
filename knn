@@ -1,0 +1,47 @@
+#knn
+import numpy as np
+import math
+
+documents = [
+    "Data science and machine learning are popular fields",
+    "Machine learning uses data",
+    "Deep learning is a branch of machine learning",
+    "Cooking recipes and food data"
+]
+
+labels = ['a', 'b', 'b', 'c']
+
+vocab = sorted(list(set(word for doc in documents for word in doc.split())))
+
+def to_vec(doc):
+    tokens = doc.split()
+    return [1 if w in tokens else 0 for w in vocab]
+
+def cosine(a, b):
+    num = np.dot(a, b)
+    denom = np.linalg.norm(a)*np.linalg.norm(b)
+    return num/denom if denom!=0 else 0
+
+def knn_predict(test_vector, train_vectors, labels, k=3):
+    similarities = []
+    for train_vec, label in zip(train_vectors, labels):
+        sim = cosine(test_vector, train_vec)
+        similarities.append((sim, label))
+
+    similarities.sort(reverse=True)
+    top_k = similarities[:k]
+
+    votes = {}
+    for _, label in top_k:
+        votes[label] = votes.get(label, 0) + 1
+
+    return max(votes, key=votes.get)
+
+
+train_vectors = [to_vec(doc) for doc in documents]
+
+test_doc = "dog runs fast"
+test_vec = to_vec(test_doc)
+
+prediction = knn_predict(test_vec, train_vectors, labels, k=3)
+print("Predicted class:", prediction)
