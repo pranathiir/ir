@@ -1,0 +1,51 @@
+# rocchio
+
+import numpy as np
+import math
+
+vocab = set()
+for text, _ in training_data:
+    for word in text.split():
+        vocab.add(word)
+vocab = sorted(list(vocab))
+V = len(vocab)
+print(f"Vocabulary: {vocab}\n")
+
+def to_vector(text):
+    words = text.split()
+    return [1 if word in words else 0 for word in vocab]
+
+alpha, beta = 1.0, 0.5
+pos_docs = [to_vector(t) for t, l in training_data if l == 1]
+neg_docs = [to_vector(t) for t, l in training_data if l == 0]
+
+N_pos, N_neg = len(pos_docs), len(neg_docs)
+
+pos_avg = [0.0] * V
+for vec in pos_docs:
+    for i in range(V):
+        pos_avg[i] += vec[i]
+pos_avg = [alpha * (x / N_pos) for x in pos_avg]
+
+neg_avg = [0.0] * V
+for vec in neg_docs:
+    for i in range(V):
+        neg_avg[i] += vec[i]
+neg_avg = [beta * (x / N_neg) for x in neg_avg]
+
+proto_pos = [pos_avg[i] - neg_avg[i] for i in range(V)]
+proto_neg = [neg_avg[i] - pos_avg[i] for i in range(V)]
+
+def cosine(a, b):
+    numer = np.dot(a, b)
+    denom = np.linalg.norm(a)*np.linalg.norm(b)
+    return numer/denom if denom!=0 else 0
+
+def rocchio_classify(text):
+    vec = to_vector(text)
+    return 1 if cosine(vec, proto_pos) > cosine(vec, proto_neg) else 0
+
+print("=== ROCCHIO CLASSIFICATION ===")
+for r in test_reviews:
+    pred = rocchio_classify(r)
+    print(f'"{r}" → {"POSITIVE" if pred == 1 else "NEGATIVE"}')
